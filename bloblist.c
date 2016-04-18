@@ -25,7 +25,16 @@ void add_node (BLOBLIST* l, NODE* n) {
 		return;
 	}
 	
-	while(aux->next != NULL) aux = aux->next;
+	while(aux->next != NULL) {
+		// Check if aux is n
+		if (aux->blob->id == n->blob->id) {
+			// Delete node
+			delete_node(n);
+			// Don't add
+			return;
+		}
+		else aux = aux->next;
+	}
 	aux->next = n;
 }
 

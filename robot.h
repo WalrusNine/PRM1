@@ -1,6 +1,16 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+const float hotspots[][] =
+{
+	{ 10, 4 }, { 4, 0 }, { 10, -5 }, { 0, -5 }, { 0, 0 }, { 0, 5 },
+	{ -10, 5 }, { -4, 0 }, { -10, -5 }
+};
+const int n_hotspots = 9;
+int current_hotspot = 0;
+int in_hotspot = 0;
+float current_pa = 0;
+
 enum state {
 	ACQUIRING_BLOB,
 	GOING_NEAR_BLOB,
@@ -38,13 +48,16 @@ typedef struct robot {
 	
 	BLOB* acquired_blob;
 	
+	float world_x, world_y;
+	float initial_x, initial_y;
+	
 } ROBOT;
 
-int create_robot (int port, int type);
+int create_robot (int port, int type, int x, int y);
 
 int setup (ROBOT* r);
 
-void read (ROBOT* r);
+void robot_read (ROBOT* r);
 
 void open_gripper (ROBOT* r);
 

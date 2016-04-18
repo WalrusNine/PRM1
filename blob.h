@@ -2,12 +2,13 @@
 #define BLOB_H
 
 typedef struct blob {
-	float world_x, world_y;
-	float self_x, self_y;
+	float x, y;
 	int is_acquired;
+	
+	int id;
 } BLOB;
 
-BLOB* create_blob (float x, float y);
+BLOB* create_blob (float x, float y, int id);
 
 void acquire (BLOB* b);
 

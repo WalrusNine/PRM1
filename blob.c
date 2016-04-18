@@ -1,14 +1,12 @@
 #include "blob.h"
 
-BLOB* create_blob (float x, float y) {
+BLOB* create_blob (float x, float y, int id) {
 	BLOB* b = malloc(sizeof(BLOB));
 	
 	// Setup position
-	b->world_x = x;
-	b->world_y = y;
-	
-	b->self_x = 0;
-	b->self_y = 0;
+	b->x = x;
+	b->y = y;
+	b->id = id;
 	
 	b->is_acquired = 0;
 	

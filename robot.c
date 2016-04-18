@@ -2,7 +2,7 @@
 
 #include <math.h>
 
-ROBOT* create_robot (int port, int type) {
+ROBOT* create_robot (int port, int type, int x, int y) {
 	ROBOT* r = malloc(sizeof(ROBOT));
 	
 	r->client = playerc_client_create (NULL, "localhost", port);
@@ -30,6 +30,12 @@ ROBOT* create_robot (int port, int type) {
 	r->vrot = 0.4f;
 	r->acquired_blob = NULL;
 	
+	r->world_x = x;
+	r->world_y = y;
+	
+	r->initial_x = x;
+	r->initial_y = y;
+	
 	return r;
 }
 
@@ -43,6 +49,9 @@ int setup (ROBOT* r) {
 	else {
 		// Activate
 		playerc_position2d_enable(r->position2d, 1);
+		if (r->type == WITHOUT_GRIPPER) {
+			current_pa = r->position2d->pa;
+		}
 	}
 	
 	// Laser
@@ -78,7 +87,7 @@ int setup (ROBOT* r) {
 	return 1;
 }
 
-void read (ROBOT* r) {
+void robot_read (ROBOT* r) {
 	playerc_client_read(r->client);
 }
 
@@ -101,76 +110,178 @@ int is_gripper_closed (ROBOT* r) {
 }
 
 void update (ROBOT* r, BLOBLIST* list) {
-	if (r->type == 0) {
-		// With gripper
-		if (r->state == ACQUIRING_BLOB) {
-			// Search for blob and set it as acquired
-			r->acquired = get_unacquired_blob(list);
-			if (r->acquired != NULL) {
-				r->state = GOING_NEAR_BLOB;
-				acquire(r->acquired);
+	update_current_world_pos (r);
+	if (r->type == WITH_GRIPPER) {
+		update_with_gripper(r, list);
+	}
+	else update_without_gripper(r, list);
+}
+
+void update_without_gripper (ROBOT* r, BLOBLIST* list) {
+	if (!in_hotspot) {
+		// Update current pa
+		current_pa = r->position2d->pa;
+		
+		// Get all blobs in camera, add to list
+		int k;
+		for(k = 0; k < r->bf->blobs_count; k++){
+			if (r->bf->blobs[k].color == 65280){
+				// Found blob
+				int blob_x = r->bf->blobs[k].x;
+				float blob_range = r->bf->blobs[k].range;
+
+				// Get angle to blob
+				int temp_diff = 40 - blob_x;
+				float angle = temp_diff;
+				
+				angle *= (3.f / 4.f);
+				angle *= (M_PI / 180.f); // Radians
+
+				float dest_x = r->world_x + blob_range * cos(angle);
+				float dest_y = r->world_y + blob_range * sin(angle);
+
+				add_node(list, create_blob(dest_x, dest_y, r->bf->blobs[k].id));
 			}
 		}
-		else if (r->state == GOING_NEAR_BLOB) {
-			// If is near blob, change state to GOING_TO_BLOB
-			if (distance(r->position2d->px, r->position2d->py, r->acquired_blob->world_x, r->acquired_blob->world_y) < 8) {
-				r->state = GOING_TO_BLOB;
-			}
-			else {
-				// Go to position
-				go_to (r, r->acquired_blob->x, r->acquired_blob->y);
-			}
+		
+		// Go to next hotspot
+		int rsc = go_to(r, hotspots[current_hotspot][0], hotspots[current_hotspot][0]);
+		if (rsc) {
+			// Reached
+			in_hotspot = 1;
 		}
-		else if (r->state == GOING_TO_BLOB) {
-			// Find correct position and go for it
+	}
+	else {
+		// Reached, turn right until goes around, then change hotspot
+		turn_right(r);
+		// TODO: won't work this way, first time diff will be lesser than 0.1f
+		// Greater than?
+		if (diff(r->position2d->pa, current_pa) < 0.1f) {
+			in_hotspot = 0;
 			
-			
-		}
-		else if (r->state == GRABBING_BLOB) {
-			// Close gripper if it's not closing already
-			if (!r->isClosingGripper) {
-				close_gripper(r);
-			}
-			
-		}
-		else if (r->state == GOING_TO_BASE) {
-			// Go to (0,0)
-			go_to (r, 0.f, 0.f);
-		}
-		else if (r->state == DROPING_BLOB) {
-			// Open gripper if it's not opening already
-			if (!r->isOpeningGripper) {
-				open_gripper(r);
-			}
-			
-			if (is_gripper_opened(r)) {
-				r->isOpeningGripper = 0;
-				r->state = ADJUST_IN_BASE;
-			}
-		}
-		else if (r->state == ADJUST_IN_BASE) {
-			// Rotate until initial rotation
-			if (diff(r->position2d->pa, 0) < 5) {
-				r->state = ACQUIRING_BLOB;
-			}
-			else turn_right(r);
 		}
 	}
 }
 
-void turn_left (ROBOT* r) {
-	r->vrot = -0.4f;
+void update_with_gripper (ROBOT* r, BLOBLIST* list) {
+	// With gripper
+	if (r->state == ACQUIRING_BLOB) {
+		// Search for blob and set it as acquired
+		r->acquired = get_unacquired_blob(list);
+		if (r->acquired != NULL) {
+			r->state = GOING_NEAR_BLOB;
+			acquire(r->acquired);
+		}
+	}
+	else if (r->state == GOING_NEAR_BLOB) {
+		// If is near blob, change state to GOING_TO_BLOB
+		// Go to position
+		int is_near = go_to (r, r->acquired_blob->x, r->acquired_blob->y);
+		if (is_near) r->state = GOING_TO_BLOB;
+	}
+	else if (r->state == GOING_TO_BLOB) {
+		// Find correct position and go for it
+		int k, temp_diff = 0;
+		float temp_range = 0;
+		for(k = 0; k < r->bf->blobs_count; k++){
+			if (r->bf->blobs[k].id == r->acquired_blob->id){
+				temp_diff = 40 - (int)(r->bf->blobs[k].x);
+				temp_range = bf->blobs[k].range;
+			}
+		}
+		
+		if (temp_diff < 0) turn_right(r);
+		else if (temp_diff > 0) turn_left(r);
+		else no_turn(r);
+		
+		if (temp_range < 0.4f) {
+			no_turn(r);
+			r->vlong = 0;
+			r->state = GRABBING_BLOB;
+		}
+	}
+	else if (r->state == GRABBING_BLOB) {
+		// Close gripper if it's not closing already
+		if (!r->isClosingGripper) {
+			close_gripper(r);
+		}
+		if (is_gripper_closed(r)) {
+			r->state = GOING_TO_BASE;
+		}
+		
+	}
+	else if (r->state == GOING_TO_BASE) {
+		// Go to (0,0)
+		go_to (r, 0.f, 0.f);
+		if (distance(r->position2d->px, r->position2d->py, 0.f, 0.f) < 1) {
+			r->state = DROPPING_BLOB;
+		}
+	}
+	else if (r->state == DROPING_BLOB) {
+		// Open gripper if it's not opening already
+		if (!r->isOpeningGripper) {
+			open_gripper(r);
+		}
+		
+		if (is_gripper_opened(r)) {
+			r->isOpeningGripper = 0;
+			r->state = ADJUST_IN_BASE;
+		}
+	}
+	else if (r->state == ADJUST_IN_BASE) {
+		// Rotate until initial rotation
+		// TODO: Check if 0 is correct
+		if (diff(r->position2d->pa, 0) < 0.2f) {
+			r->state = ACQUIRING_BLOB;
+		}
+		else turn_right(r);
+	}
 }
 
-void turn_right (ROBOT* r) {
+void no_turn (ROBOT* r) {
+	r->vrot = 0;
+}
+
+void turn_left (ROBOT* r) {
 	r->vrot = 0.4f;
 }
 
-void go_to (ROBOT* r, float x, float y) {
+void turn_right (ROBOT* r) {
+	r->vrot = -0.4f;
+}
+
+int go_to (ROBOT* r, float x, float y) {
 	r->dest_x = x;
 	r->dest_y = y;
 	
 	r->vlong = r->max_speed;
+	
+	//Calcula vel longitudinal
+	float dist = distance(r->world_x, r->world_y, x, y) ;
+
+	if (dist < 0.5) {
+		return 1;
+	}
+
+	//Calcula força de atração
+	float angdest = atan2(y - r->world_y, x - ->world_x);
+	float ang_rot = r->position2d->pa - angdest;
+	r->vrot = -ang_rot*0.6f;
+
+	//Calcula força de repulsão
+	float campo_obst=0;
+
+	for(i=200; i<=360; i+=30) 
+		if (r->laser->ranges[i] < 2.0)
+			campo_obst += 2.0 - r->laser->ranges[i];
+
+	for(i=160; i>=0; i-=30) 
+		if (r->laser->ranges[i] < 2.0)
+			campo_obst -= 2.0 - r->laser->ranges[i];
+
+	r->vrot -= 0.5 * campo_obst;
+	
+	return 0;
 }
 
 float diff (float a, float b) {
@@ -186,6 +297,11 @@ float distance (float x1, float y1, float x2, float y2) {
 
 void execute (Robot* r) {
 	playerc_position2d_set_cmd_vel(r->position2d, r->vlong, 0, r->vrot, 1);
+}
+
+void update_current_world_pos (ROBOT* r) {
+	r->world_x = r->initial_x - r->position2d->px;
+	r->world_y = r->initial_y - r->position2d->py;
 }
 
 void delete_robot (ROBOT* r) {
