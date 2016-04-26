@@ -11,9 +11,9 @@
 
 int main(int argc, const char **argv) {
 	// Create robots
-	ROBOT* robot1 = create_robot(6665, WITH_GRIPPER, 13, 1);
-	ROBOT* robot2 = create_robot(6666, WITH_GRIPPER, 13, 0);
-	ROBOT* cotoco = create_robot(6667, WITHOUT_GRIPPER, 13, -1);
+	ROBOT* robot1 = create_robot(6665, WITH_GRIPPER);
+	ROBOT* robot2 = create_robot(6666, WITH_GRIPPER);
+	ROBOT* cotoco = create_robot(6667, WITHOUT_GRIPPER);
 	
 	// Create bloblist
 	BLOBLIST* blist = create_list();

@@ -54,12 +54,9 @@ typedef struct robot {
 	
 	struct blob* acquired;
 	
-	float world_x, world_y;
-	float initial_x, initial_y;
-	
 } ROBOT;
 
-ROBOT* create_robot (int port, int type, int x, int y);
+ROBOT* create_robot (int port, int type);
 
 int setup (ROBOT* r);
 
@@ -94,8 +91,6 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list);
 void no_turn (ROBOT* r);
 
 float distance (float x1, float y1, float x2, float y2);
-
-void update_current_world_pos (ROBOT* r);
 
 #endif
 

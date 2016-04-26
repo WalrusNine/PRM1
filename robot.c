@@ -3,7 +3,7 @@
 
 #include <math.h>
 
-ROBOT* create_robot (int port, int type, int x, int y) {
+ROBOT* create_robot (int port, int type) {
 	ROBOT* r = malloc(sizeof(ROBOT));
 	
 	r->client = playerc_client_create (NULL, "localhost", port);
@@ -29,12 +29,6 @@ ROBOT* create_robot (int port, int type, int x, int y) {
 	r->vlong = r->max_speed;
 	r->vrot = 0.4f;
 	r->acquired = NULL;
-	
-	r->world_x = x;
-	r->world_y = y;
-	
-	r->initial_x = x;
-	r->initial_y = y;
 
 	setup(r);
 
@@ -117,7 +111,6 @@ int is_gripper_closed (ROBOT* r) {
 }
 
 void update (ROBOT* r, BLOBLIST* list) {
-	update_current_world_pos (r);
 	if (r->type == WITH_GRIPPER) {
 		update_with_gripper(r, list);
 	}
@@ -144,8 +137,8 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 				angle *= (3.f / 4.f);
 				angle *= (M_PI / 180.f); // Radians
 
-				float dest_x = r->world_x - blob_range * cos(angle);
-				float dest_y = r->world_y - blob_range * sin(angle);
+				float dest_x = r->position2d->px - blob_range * cos(angle);
+				float dest_y = r->position2d->py - blob_range * sin(angle);
 
 				add_node(list, create_node(create_blob(dest_x, dest_y, r->bf->blobs[k].id)));
 			}
@@ -177,7 +170,6 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		// Search for blob and set it as acquired
 		r->acquired = get_unacquired_blob(list);
 		if (r->acquired != NULL) {
-			printf("Acquired: %f %f\n", r->acquired->x, r->acquired->y);
 			r->state = GOING_NEAR_BLOB;
 			acquire(r->acquired);
 		}
@@ -205,7 +197,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		
 		if (temp_range < 0.4f) {
 			no_turn(r);
-			r->vlong = 0;
+			set_speed(r, 0);
 			r->state = GRABBING_BLOB;
 		}
 	}
@@ -259,6 +251,10 @@ void turn_right (ROBOT* r) {
 	r->vrot = -0.4f;
 }
 
+void set_speed (ROBOT* r, float val) {
+	r->vlong = val;
+}
+
 int go_to (ROBOT* r, float x, float y) {
 	r->dest_x = x;
 	r->dest_y = y;
@@ -267,7 +263,7 @@ int go_to (ROBOT* r, float x, float y) {
 	
 	//Calcula vel longitudinal
 	//printf("World: %f,%f - Dest: %f,%f\n", r->world_x, r->world_y, x, y);
-	float dist = distance(r->world_x, r->world_y, x, y);
+	float dist = distance(r->position2d->px, r->position2d->py, x, y);
 	
 
 	if (dist < 0.5) {
@@ -275,7 +271,7 @@ int go_to (ROBOT* r, float x, float y) {
 	}
 
 	//Calcula força de atração
-	float angdest = atan2(y - r->world_y, x - r->world_x);
+	float angdest = atan2(y - r->position2d->py, x - r->position2d->px);
 	float ang_rot = r->position2d->pa - angdest;
 	r->vrot = -ang_rot;
 
@@ -311,11 +307,6 @@ float distance (float x1, float y1, float x2, float y2) {
 
 void execute (ROBOT* r) {
 	playerc_position2d_set_cmd_vel(r->position2d, r->vlong, 0, r->vrot, 1);
-}
-
-void update_current_world_pos (ROBOT* r) {
-	r->world_x = r->initial_x - r->position2d->px;
-	r->world_y = - r->position2d->py;
 }
 
 void delete_robot (ROBOT* r) {
