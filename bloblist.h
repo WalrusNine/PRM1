@@ -4,12 +4,12 @@
 #include "blob.h"
 
 typedef struct node {
-	BLOB* blob;
-	NODE* next;
+	struct blob* blob;
+	struct node* next;
 } NODE;
 
 typedef struct bloblist {
-	NODE* first;
+	struct node* first;
 	int size;
 } BLOBLIST;
 

@@ -1,15 +1,20 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
-const float hotspots[][] =
+#include <libplayerc/playerc.h>
+#include "bloblist.h"
+
+#define DEBUG printf("Hey - %d - %s\n", __LINE__, __FILE__);
+
+static float hotspots[9][2] =
 {
 	{ 10, 4 }, { 4, 0 }, { 10, -5 }, { 0, -5 }, { 0, 0 }, { 0, 5 },
 	{ -10, 5 }, { -4, 0 }, { -10, -5 }
 };
-const int n_hotspots = 9;
-int current_hotspot = 0;
-int in_hotspot = 0;
-float current_pa = 0;
+static int n_hotspots = 9;
+static int current_hotspot = 0;
+static int in_hotspot = 0;
+static float current_pa = 0;
 
 enum state {
 	ACQUIRING_BLOB,
@@ -17,7 +22,7 @@ enum state {
 	GOING_TO_BLOB,
 	GRABBING_BLOB,
 	GOING_TO_BASE,
-	DROPING_BLOB,
+	DROPPING_BLOB,
 	ADJUST_IN_BASE
 };
 
@@ -32,11 +37,12 @@ typedef struct robot {
 	int isClosingGripper;
 	int isOpeningGripper;
 	int type;
+	int port;
 	
 	// Config
 	playerc_client_t* 		client;
 	playerc_position2d_t* 	position2d;
-	playerc_laser_t* 			laser;
+	playerc_laser_t* 		laser;
 	playerc_blobfinder_t* 	bf;
 	playerc_gripper_t* 		gripper;
 	
@@ -46,14 +52,14 @@ typedef struct robot {
 	
 	float max_speed;
 	
-	BLOB* acquired_blob;
+	struct blob* acquired;
 	
 	float world_x, world_y;
 	float initial_x, initial_y;
 	
 } ROBOT;
 
-int create_robot (int port, int type, int x, int y);
+ROBOT* create_robot (int port, int type, int x, int y);
 
 int setup (ROBOT* r);
 
@@ -67,19 +73,29 @@ int is_gripper_opened (ROBOT* r);
 
 int is_gripper_closed (ROBOT* r);
 
-void update (ROBOT* r);
+void update (ROBOT* r, BLOBLIST* list);
 
 void turn_left (ROBOT* r);
 
 void turn_right (ROBOT* r);
 
-void go_to (ROBOT* r, float x, float y);
+int go_to (ROBOT* r, float x, float y);
 
 float diff (float a, float b);
 
-void execute (Robot* r);
+void execute (ROBOT* r);
 
 void delete_robot (ROBOT* r);
+
+void update_without_gripper (ROBOT* r, BLOBLIST* list);
+
+void update_with_gripper (ROBOT* r, BLOBLIST* list);
+
+void no_turn (ROBOT* r);
+
+float distance (float x1, float y1, float x2, float y2);
+
+void update_current_world_pos (ROBOT* r);
 
 #endif
 

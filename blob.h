@@ -1,6 +1,8 @@
 #ifndef BLOB_H
 #define BLOB_H
 
+#include <stdlib.h>
+
 typedef struct blob {
 	float x, y;
 	int is_acquired;

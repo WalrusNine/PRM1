@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <libplayerc/playerc.h>
 #include <math.h>
 
 #include "bloblist.h"

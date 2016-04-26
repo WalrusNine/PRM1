@@ -1,5 +1,7 @@
 #include "bloblist.h"
 
+#include <stdio.h>
+
 BLOBLIST* create_list () {
 	BLOBLIST* l = malloc(sizeof(BLOBLIST));
 	
@@ -36,6 +38,7 @@ void add_node (BLOBLIST* l, NODE* n) {
 		else aux = aux->next;
 	}
 	aux->next = n;
+	printf("%f,%f\n", n->blob->x, n->blob->y);
 }
 
 BLOB* get_unacquired_blob (BLOBLIST* l) {
@@ -45,6 +48,7 @@ BLOB* get_unacquired_blob (BLOBLIST* l) {
 		if (!(aux->blob->is_acquired)) {
 			return aux->blob;
 		}
+		aux = aux->next;
 	}
 	
 	return NULL;
@@ -52,6 +56,7 @@ BLOB* get_unacquired_blob (BLOBLIST* l) {
 
 void delete_list (BLOBLIST* l) {
 	NODE* aux = l->first;
+	NODE* prem = NULL;
 	
 	while(aux != NULL) {
 		prem = aux;
