@@ -4,11 +4,12 @@
 #include <stdlib.h>
 
 typedef struct blob {
-	float x, y;
-	int is_acquired;
+	float x, y;			// Position
+	int is_acquired;	// If someone's going to get it
 	
-	int id;
+	int id;				// Useless - should be identifier
 } BLOB;
+
 
 BLOB* create_blob (float x, float y, int id);
 

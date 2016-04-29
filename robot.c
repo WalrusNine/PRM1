@@ -13,7 +13,7 @@ ROBOT* create_robot (int port, int type) {
 		return NULL;
 	}
 	
-	r->port = port;
+	r->port = port;				// Identify the robot
 	r->type = type;
 	r->state = ACQUIRING_BLOB;
 	r->isClosingGripper = 0;
@@ -28,7 +28,7 @@ ROBOT* create_robot (int port, int type) {
 	
 	r->vlong = r->max_speed;
 	r->vrot = 0.4f;
-	r->acquired = NULL;
+	r->acquired = NULL;		// No blob acquired yet
 
 	setup(r);
 
@@ -119,7 +119,7 @@ void update (ROBOT* r, BLOBLIST* list) {
 
 void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 	if (!in_hotspot) {
-		// Update current pa
+		// Update current pa - temporary, test
 		current_pa = r->position2d->pa;
 		
 		// Get all blobs in camera, add to list
@@ -152,9 +152,6 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 			// Reached
 			in_hotspot = 1;
 			r->vlong = 0;
-		}
-		else if (dist < 2) {
-			r->vlong /= 2;
 		}
 	}
 	else {
@@ -192,7 +189,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 			set_speed(r, r->vlong / 2);
 		}
 	}
-	else if (r->state == LOOKING_AT_BLOB) {
+	else if (r->state == LOOKING_AT_BLOB) {		// Test, ignore
 		// Aims at nearest blob
 		int k, temp_diff = 0;
 		float temp_range = 0;
@@ -207,6 +204,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 	}
 	else if (r->state == GOING_TO_BLOB) {
 		// Find correct position and go for it
+		// Very close, use own camera
 		int k, temp_diff = 0;
 		float temp_range = 0;
 		for(k = 0; k < r->bf->blobs_count; k++){
@@ -221,6 +219,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		else no_turn(r);
 		r->vrot /= 2;
 
+		// If is close enough and facing blob
 		if (temp_range < 0.52f && diff(temp_diff, 0) <= 2) {
 			no_turn(r);
 			set_speed(r, 0);

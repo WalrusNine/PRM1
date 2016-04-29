@@ -22,13 +22,13 @@ void add_node (BLOBLIST* l, NODE* n) {
 	// Find last
 	NODE* aux = l->first;
 	if (aux == NULL) {
-		// Add as first
+		// Add as first, because list is empty
 		l->first = n;
 		return;
 	}
 	
 	while(aux->next != NULL) {
-		// Check if aux is n
+		// Check if aux is n (if is already in list)
 		if (aux->blob->id == n->blob->id) {
 			// Delete node
 			delete_node(n);
@@ -37,20 +37,23 @@ void add_node (BLOBLIST* l, NODE* n) {
 		}
 		else aux = aux->next;
 	}
+	// If reached here, blob isn't in list yet, so add it
 	aux->next = n;
-	//printf("%f,%f\n", n->blob->x, n->blob->y);
 }
 
 BLOB* get_unacquired_blob (BLOBLIST* l) {
 	NODE* aux = l->first;
 	
 	while (aux != NULL) {
+		// Run through list, searching for unacquired blob
+		// So that a robot can reserve it
 		if (!(aux->blob->is_acquired)) {
 			return aux->blob;
 		}
 		aux = aux->next;
 	}
 	
+	// If reached here, no unacquired blob was found
 	return NULL;
 }
 

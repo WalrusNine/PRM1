@@ -6,6 +6,7 @@
 
 #define DEBUG(msg) printf("%s - %d - %s\n", msg, __LINE__, __FILE__);
 
+// Turning points for the camera
 static float hotspots[9][2] =
 {
 	{ 3, 5 }, { 3, -5 }, { 10, -5 }, { 0, -5 }, { 0, 0 }, { 0, 5 },
@@ -13,19 +14,23 @@ static float hotspots[9][2] =
 };
 static int n_hotspots = 9;
 static int current_hotspot = 0;
+
+// To know whether it's in a hotspot or not, if should turn or keep going
 static int in_hotspot = 0;
+
+// TODO: Stop turning
 static float current_pa = 0;
 static float temp = 0;
 
 enum state {
-	ACQUIRING_BLOB,
-	GOING_NEAR_BLOB,
-	GOING_TO_BLOB,
-	LOOKING_AT_BLOB,
-	GRABBING_BLOB,
-	GOING_TO_BASE,
-	DROPPING_BLOB,
-	ADJUST_IN_BASE
+	ACQUIRING_BLOB,		// Is looking at list for an unacquired blob
+	GOING_NEAR_BLOB,	// Is going to blob based on cotoco's estimation
+	GOING_TO_BLOB,		// Uses own camera to get precise position
+	LOOKING_AT_BLOB,	// Temporary, not in use
+	GRABBING_BLOB,		// Stop and close gripper
+	GOING_TO_BASE,		// Going back to 0,0
+	DROPPING_BLOB,		// Stop and open gripper
+	ADJUST_IN_BASE		// Go back to initial position
 };
 
 enum type {
@@ -36,25 +41,30 @@ enum type {
 typedef struct robot {
 	// State
 	int state;
+	
+	// Gripper state variables
 	int isClosingGripper;
 	int isOpeningGripper;
+	
 	int type;
+	
+	// 6665, 6666, 6667
 	int port;
 	
 	// Config
 	playerc_client_t* 		client;
 	playerc_position2d_t* 	position2d;
 	playerc_laser_t* 		laser;
-	playerc_blobfinder_t* 	bf;
+	playerc_blobfinder_t* 	bf;			// Camera
 	playerc_gripper_t* 		gripper;
 	
 	// Properties
-	float dest_x, dest_y;
+	float dest_x, dest_y;	// Destination
 	float vlong, vrot;
 	
 	float max_speed;
 	
-	struct blob* acquired;
+	struct blob* acquired;	// The acquired blob
 	
 } ROBOT;
 
