@@ -4,22 +4,24 @@
 #include <libplayerc/playerc.h>
 #include "bloblist.h"
 
-#define DEBUG printf("Hey - %d - %s\n", __LINE__, __FILE__);
+#define DEBUG(msg) printf("%s - %d - %s\n", msg, __LINE__, __FILE__);
 
 static float hotspots[9][2] =
 {
-	{ 10, 4 }, { 4, 0 }, { 10, -5 }, { 0, -5 }, { 0, 0 }, { 0, 5 },
+	{ 3, 5 }, { 3, -5 }, { 10, -5 }, { 0, -5 }, { 0, 0 }, { 0, 5 },
 	{ -10, 5 }, { -4, 0 }, { -10, -5 }
 };
 static int n_hotspots = 9;
 static int current_hotspot = 0;
 static int in_hotspot = 0;
 static float current_pa = 0;
+static float temp = 0;
 
 enum state {
 	ACQUIRING_BLOB,
 	GOING_NEAR_BLOB,
 	GOING_TO_BLOB,
+	LOOKING_AT_BLOB,
 	GRABBING_BLOB,
 	GOING_TO_BASE,
 	DROPPING_BLOB,
@@ -91,6 +93,8 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list);
 void no_turn (ROBOT* r);
 
 float distance (float x1, float y1, float x2, float y2);
+
+void set_speed (ROBOT* r, float val);
 
 #endif
 

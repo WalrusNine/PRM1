@@ -38,7 +38,7 @@ void add_node (BLOBLIST* l, NODE* n) {
 		else aux = aux->next;
 	}
 	aux->next = n;
-	printf("%f,%f\n", n->blob->x, n->blob->y);
+	//printf("%f,%f\n", n->blob->x, n->blob->y);
 }
 
 BLOB* get_unacquired_blob (BLOBLIST* l) {

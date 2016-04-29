@@ -137,8 +137,8 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 				angle *= (3.f / 4.f);
 				angle *= (M_PI / 180.f); // Radians
 
-				float dest_x = r->position2d->px - blob_range * cos(angle);
-				float dest_y = r->position2d->py - blob_range * sin(angle);
+				float dest_x = r->position2d->px + blob_range * cos(angle);
+				float dest_y = r->position2d->py + blob_range * sin(angle);
 
 				add_node(list, create_node(create_blob(dest_x, dest_y, r->bf->blobs[k].id)));
 			}
@@ -146,9 +146,15 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		
 		// Go to next hotspot
 		int rsc = go_to(r, hotspots[current_hotspot][0], hotspots[current_hotspot][1]);
-		if (rsc) {
+		float dist = distance(r->position2d->px, r->position2d->py, hotspots[current_hotspot][0], hotspots[current_hotspot][1]);
+		
+		if (dist < 1.2f) {
 			// Reached
 			in_hotspot = 1;
+			r->vlong = 0;
+		}
+		else if (dist < 2) {
+			r->vlong /= 2;
 		}
 	}
 	else {
@@ -157,10 +163,11 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		r->vlong = 0;
 		// TODO: won't work this way, first time diff will be lesser than 0.1f
 		// Greater than?
-		/*if (diff(r->position2d->pa, current_pa) < 0.1f) {
+		temp += 0.4f;
+		if (temp >= 3) {
 			in_hotspot = 0;
-			
-		}*/
+			current_hotspot++;
+		}
 	}
 }
 
@@ -178,24 +185,43 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		// If is near blob, change state to GOING_TO_BLOB
 		// Go to position
 		int is_near = go_to (r, r->acquired->x, r->acquired->y);
-		if (is_near) r->state = GOING_TO_BLOB;
+		float dist = distance(r->position2d->px, r->position2d->py, r->acquired->x, r->acquired->y);
+		
+		if (dist < 3) {
+			r->state = GOING_TO_BLOB;
+			set_speed(r, r->vlong / 2);
+		}
+	}
+	else if (r->state == LOOKING_AT_BLOB) {
+		// Aims at nearest blob
+		int k, temp_diff = 0;
+		float temp_range = 0;
+		for(k = 0; k < r->bf->blobs_count; k++){
+			if (r->bf->blobs[k].color == 65280){
+				temp_diff = 40 - (int)(r->bf->blobs[k].x);
+				temp_range = r->bf->blobs[k].range;
+			}
+		}
+		if (temp_diff < 0) turn_right(r);
+		else if (temp_diff > 0) turn_left(r);
 	}
 	else if (r->state == GOING_TO_BLOB) {
 		// Find correct position and go for it
 		int k, temp_diff = 0;
 		float temp_range = 0;
 		for(k = 0; k < r->bf->blobs_count; k++){
-			if (r->bf->blobs[k].id == r->acquired->id){
+			if (r->bf->blobs[k].color == 65280){
 				temp_diff = 40 - (int)(r->bf->blobs[k].x);
 				temp_range = r->bf->blobs[k].range;
 			}
 		}
-		
+
 		if (temp_diff < 0) turn_right(r);
 		else if (temp_diff > 0) turn_left(r);
 		else no_turn(r);
-		
-		if (temp_range < 0.4f) {
+		r->vrot /= 2;
+
+		if (temp_range < 0.52f && diff(temp_diff, 0) <= 2) {
 			no_turn(r);
 			set_speed(r, 0);
 			r->state = GRABBING_BLOB;
@@ -262,18 +288,21 @@ int go_to (ROBOT* r, float x, float y) {
 	r->vlong = r->max_speed;
 	
 	//Calcula vel longitudinal
-	//printf("World: %f,%f - Dest: %f,%f\n", r->world_x, r->world_y, x, y);
 	float dist = distance(r->position2d->px, r->position2d->py, x, y);
+	printf("[%d] Pos: %f,%f - Dest: %f,%f - Dist: %f\n", r->port, r->position2d->px, r->position2d->py, x, y, dist);
 	
-
-	if (dist < 0.5) {
+	if (dist < 0.8) {
 		return 1;
 	}
 
 	//Calcula força de atração
 	float angdest = atan2(y - r->position2d->py, x - r->position2d->px);
 	float ang_rot = r->position2d->pa - angdest;
+
+	printf("AngRot: %f\n", ang_rot);
+	
 	r->vrot = -ang_rot;
+	//printf("AngDest: %f, AngRot: %f\n", angdest, ang_rot);
 
 	//Calcula força de repulsão
 	float campo_obst=0;
