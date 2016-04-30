@@ -155,6 +155,8 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		}
 	}
 	else {
+		// TODO: keep looking for blobs to add
+		
 		// Reached, turn right until goes around, then change hotspot
 		turn_right(r);
 		r->vlong = 0;
@@ -294,7 +296,7 @@ int go_to (ROBOT* r, float x, float y) {
 		return 1;
 	}
 
-	//Calcula forÁa de atraÁ„o
+	//Calcula for√ßa de atra√ß√£o
 	float angdest = atan2(y - r->position2d->py, x - r->position2d->px);
 	float ang_rot = r->position2d->pa - angdest;
 
@@ -303,7 +305,7 @@ int go_to (ROBOT* r, float x, float y) {
 	r->vrot = -ang_rot;
 	//printf("AngDest: %f, AngRot: %f\n", angdest, ang_rot);
 
-	//Calcula forÁa de repuls„o
+	//Calcula for√ßa de repuls√£o
 	float campo_obst=0;
 
 	int i;
