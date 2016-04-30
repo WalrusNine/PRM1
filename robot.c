@@ -26,9 +26,9 @@ ROBOT* create_robot (int port, int type) {
 		r->max_speed = 2.0f;
 	}
 	
-	r->vlong = r->max_speed;
-	r->vrot = 0.4f;
-	r->acquired = NULL;		// No blob acquired yet
+	r->vlong = 0;
+	r->vrot = 0;
+	r->acquired_blob = NULL;		// No blob acquired yet
 
 	setup(r);
 
@@ -123,26 +123,7 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		current_pa = r->position2d->pa;
 		
 		// Get all blobs in camera, add to list
-		int k;
-		for(k = 0; k < r->bf->blobs_count; k++){
-			if (r->bf->blobs[k].color == 65280){
-				// Found blob
-				int blob_x = r->bf->blobs[k].x;
-				float blob_range = r->bf->blobs[k].range;
-
-				// Get angle to blob
-				int temp_diff = 40 - blob_x;
-				float angle = temp_diff;
-				
-				angle *= (3.f / 4.f);
-				angle *= (M_PI / 180.f); // Radians
-
-				float dest_x = r->position2d->px + blob_range * cos(angle);
-				float dest_y = r->position2d->py + blob_range * sin(angle);
-
-				add_node(list, create_node(create_blob(dest_x, dest_y, r->bf->blobs[k].id)));
-			}
-		}
+		capture_blobs(r, list);
 		
 		// Go to next hotspot
 		int rsc = go_to(r, hotspots[current_hotspot][0], hotspots[current_hotspot][1]);
@@ -155,8 +136,9 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		}
 	}
 	else {
-		// TODO: keep looking for blobs to add
-		
+		// Get all blobs in camera, add to list
+		capture_blobs(r, list);
+
 		// Reached, turn right until goes around, then change hotspot
 		turn_right(r);
 		r->vlong = 0;
@@ -170,21 +152,46 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 	}
 }
 
+void capture_blobs (ROBOT* r, BLOBLIST* list) {
+	// Get all blobs in camera, add to list
+	int k;
+	for(k = 0; k < r->bf->blobs_count; k++){
+		if (r->bf->blobs[k].color == 65280){
+			// Found blob
+			int blob_x = r->bf->blobs[k].x;
+			float blob_range = r->bf->blobs[k].range;
+
+			// Get angle to blob
+			int temp_diff = 40 - blob_x;
+			float angle = temp_diff;
+			
+			angle *= (3.f / 4.f);
+			angle *= (M_PI / 180.f); // Radians
+
+			float dest_x = r->position2d->px + blob_range * cos(angle);
+			float dest_y = r->position2d->py + blob_range * sin(angle);
+
+			add_node(list, create_node(create_blob(dest_x, dest_y, r->bf->blobs[k].id)));
+		}
+	}
+}
+
 void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 	// With gripper
 	if (r->state == ACQUIRING_BLOB) {
 		// Search for blob and set it as acquired
-		r->acquired = get_unacquired_blob(list);
-		if (r->acquired != NULL) {
+		r->acquired_blob = get_unacquired_blob(list);
+		if (r->acquired_blob != NULL && !is_robot_acting) {
 			r->state = GOING_NEAR_BLOB;
-			acquire(r->acquired);
+			acquire(r->acquired_blob);
+			is_robot_acting = 1;
 		}
 	}
 	else if (r->state == GOING_NEAR_BLOB) {
 		// If is near blob, change state to GOING_TO_BLOB
 		// Go to position
-		int is_near = go_to (r, r->acquired->x, r->acquired->y);
-		float dist = distance(r->position2d->px, r->position2d->py, r->acquired->x, r->acquired->y);
+		int is_near = go_to (r, r->acquired_blob->x, r->acquired_blob->y);
+		float dist = distance(r->position2d->px, r->position2d->py, r->acquired_blob->x, r->acquired_blob->y);
 		
 		if (dist < 3) {
 			r->state = GOING_TO_BLOB;
@@ -222,7 +229,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		r->vrot /= 2;
 
 		// If is close enough and facing blob
-		if (temp_range < 0.52f && diff(temp_diff, 0) <= 2) {
+		if (temp_range < 0.52f /*&& diff(temp_diff, 0) <= 2*/) {
 			no_turn(r);
 			set_speed(r, 0);
 			r->state = GRABBING_BLOB;
@@ -235,10 +242,12 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		}
 		if (is_gripper_closed(r)) {
 			r->state = GOING_TO_BASE;
+			is_robot_acting = 0;
 		}
 		
 	}
 	else if (r->state == GOING_TO_BASE) {
+		
 		// Go to (0,0)
 		go_to (r, 0.f, 0.f);
 		if (distance(r->position2d->px, r->position2d->py, 0.f, 0.f) < 1) {
@@ -290,7 +299,7 @@ int go_to (ROBOT* r, float x, float y) {
 	
 	//Calcula vel longitudinal
 	float dist = distance(r->position2d->px, r->position2d->py, x, y);
-	printf("[%d] Pos: %f,%f - Dest: %f,%f - Dist: %f\n", r->port, r->position2d->px, r->position2d->py, x, y, dist);
+	//printf("[%d] Pos: %f,%f - Dest: %f,%f - Dist: %f\n", r->port, r->position2d->px, r->position2d->py, x, y, dist);
 	
 	if (dist < 0.8) {
 		return 1;

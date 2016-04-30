@@ -9,8 +9,8 @@
 // Turning points for the camera
 static float hotspots[9][2] =
 {
-	{ 3, 5 }, { 3, -5 }, { 10, -5 }, { 0, -5 }, { 0, 0 }, { 0, 5 },
-	{ -10, 5 }, { -4, 0 }, { -10, -5 }
+	{ 3, 5 }, { 3, -5 }, { 3, 0 }, { 13, 5 }, { 13, 0 }, { 13, -5 },
+	{ 23, 5 }, { 23, 0 }, { 23, -5 }
 };
 static int n_hotspots = 9;
 static int current_hotspot = 0;
@@ -21,6 +21,9 @@ static int in_hotspot = 0;
 // TODO: Stop turning
 static float current_pa = 0;
 static float temp = 0;
+
+// Whether there's a robot going for a blob or not
+static int is_robot_acting = 0;
 
 enum state {
 	ACQUIRING_BLOB,		// Is looking at list for an unacquired blob
@@ -64,7 +67,7 @@ typedef struct robot {
 	
 	float max_speed;
 	
-	struct blob* acquired;	// The acquired blob
+	struct blob* acquired_blob;	// The acquired blob
 	
 } ROBOT;
 
@@ -105,6 +108,8 @@ void no_turn (ROBOT* r);
 float distance (float x1, float y1, float x2, float y2);
 
 void set_speed (ROBOT* r, float val);
+
+void capture_blobs (ROBOT* r, BLOBLIST* list);
 
 #endif
 
