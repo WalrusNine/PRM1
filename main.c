@@ -11,8 +11,11 @@
 
 int main(int argc, const char **argv) {
 	int side = 1;		// Assume it's right
-	if (argc > 1) {
+	if (argc == 2) {
 		side = atoi(argv[1]);
+	}
+	else {
+		printf("Use: ./main [side]\nAssuming it's right.\n\n");
 	}
 	// Create robots
 	ROBOT* robot1 = create_robot(side, 5, WITH_GRIPPER);
