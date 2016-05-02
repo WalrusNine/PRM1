@@ -64,6 +64,7 @@ typedef struct robot {
 	// Properties
 	float dest_x, dest_y;	// Destination
 	float vlong, vrot;
+	float initial_x, initial_y;
 	
 	float max_speed;
 	
