@@ -64,9 +64,6 @@ int setup (ROBOT* r) {
 	else {
 		// Activate
 		playerc_position2d_enable(r->position2d, 1);
-		if (r->type == WITHOUT_GRIPPER) {
-			current_pa = r->position2d->pa;
-		}
 	}
 	
 	// Laser
@@ -132,10 +129,7 @@ void update (ROBOT* r, BLOBLIST* list) {
 }
 
 void update_without_gripper (ROBOT* r, BLOBLIST* list) {
-	if (!in_hotspot) {
-		// Update current pa - temporary, test
-		current_pa = r->position2d->pa;
-		
+	if (!in_hotspot) {		
 		// Get all blobs in camera, add to list
 		capture_blobs(r, list);
 		
@@ -161,6 +155,7 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		if (temp >= 18) {
 			in_hotspot = 0;
 			current_hotspot++;
+			temp = 0;
 		}
 	}
 }
@@ -229,7 +224,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		r->vrot /= 2;
 
 		// If is close enough and facing blob
-		if (temp_range < 0.52f) {
+		if (temp_range < 0.5f) {
 			no_turn(r);
 			set_speed(r, 0);
 			r->state = GRABBING_BLOB;
@@ -237,9 +232,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 	}
 	else if (r->state == GRABBING_BLOB) {
 		// Close gripper if it's not closing already
-		if (!r->isClosingGripper) {
-			close_gripper(r);
-		}
+		close_gripper(r);
 		if (is_gripper_closed(r)) {
 			r->state = GOING_TO_BASE;
 			is_robot_acting = 0;
@@ -248,16 +241,19 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 	}
 	else if (r->state == GOING_TO_BASE) {
 		// Go to (0,0)
-		go_to (r, 0.f, 0.f);
-		if (distance(r->position2d->px, r->position2d->py, 0.f, 0.f) < 1) {
+		go_to (r, 1.f, -1.f);
+		if (distance(r->position2d->px, r->position2d->py, 1.f, -1.f) < 0.3f) {
+			set_speed(r, 0);
+			no_turn(r);
 			r->state = DROPPING_BLOB;
 		}
 	}
 	else if (r->state == DROPPING_BLOB) {
 		// Open gripper if it's not opening already
-		if (!r->isOpeningGripper) {
+		//if (!r->isOpeningGripper) {
+			//DEBUG("Opening");
 			open_gripper(r);
-		}
+		//}
 		
 		if (is_gripper_opened(r)) {
 			r->isOpeningGripper = 0;
@@ -265,8 +261,11 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		}
 	}
 	else if (r->state == ADJUST_IN_BASE) {
-		// Go to initial position
-		go_to(r, r->initial_x, r->initial_y);
+		set_speed(r, -(r->max_speed/2));
+		if (distance(r->position2d->px, r->position2d->py, 1.f, -1.f) > 1.5f) {
+			set_speed(r, 0);
+			r->state = ACQUIRING_BLOB;
+		}
 	}
 }
 
@@ -302,11 +301,12 @@ int go_to (ROBOT* r, float x, float y) {
 
 	//Calcula força de atração
 	float angdest = atan2(y - r->position2d->py, x - r->position2d->px);
-	float ang_rot = r->position2d->pa - angdest;
+	float ang_rot = angdest - r->position2d->pa;
+	float diff_ok = atan2(sin(ang_rot), cos(ang_rot));
 
-	printf("AngRot: %f\n", ang_rot);
+	//printf("AngRot: %f\n", ang_rot);
 	
-	r->vrot = -ang_rot;
+	r->vrot = diff_ok;
 	//printf("AngDest: %f, AngRot: %f\n", angdest, ang_rot);
 
 	//Calcula força de repulsão

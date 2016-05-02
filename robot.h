@@ -19,7 +19,6 @@ static int current_hotspot = 0;
 static int in_hotspot = 0;
 
 // TODO: Stop turning
-static float current_pa = 0;
 static float temp = 0;
 
 // Whether there's a robot going for a blob or not

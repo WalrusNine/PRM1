@@ -17,6 +17,7 @@ int main(int argc, const char **argv) {
 	else {
 		printf("Use: ./main [side]\nAssuming it's right.\n\n");
 	}
+
 	// Create robots
 	ROBOT* robot1 = create_robot(side, 5, WITH_GRIPPER);
 	ROBOT* robot2 = create_robot(side, 6, WITH_GRIPPER);
