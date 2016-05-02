@@ -72,7 +72,7 @@ typedef struct robot {
 	
 } ROBOT;
 
-ROBOT* create_robot (int port, int type);
+ROBOT* create_robot (int side, int port, int type);
 
 int setup (ROBOT* r);
 

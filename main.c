@@ -10,10 +10,14 @@
 */
 
 int main(int argc, const char **argv) {
+	int side = 1;		// Assume it's right
+	if (argc > 1) {
+		side = atoi(argv[1]);
+	}
 	// Create robots
-	ROBOT* robot1 = create_robot(6665, WITH_GRIPPER);
-	ROBOT* robot2 = create_robot(6666, WITH_GRIPPER);
-	ROBOT* cotoco = create_robot(6667, WITHOUT_GRIPPER);
+	ROBOT* robot1 = create_robot(side, 5, WITH_GRIPPER);
+	ROBOT* robot2 = create_robot(side, 6, WITH_GRIPPER);
+	ROBOT* cotoco = create_robot(side, 7, WITHOUT_GRIPPER);
 	
 	// Create bloblist
 	BLOBLIST* blist = create_list();

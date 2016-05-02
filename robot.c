@@ -3,17 +3,19 @@
 
 #include <math.h>
 
-ROBOT* create_robot (int port, int type) {
+ROBOT* create_robot (int side, int port, int type) {
 	ROBOT* r = malloc(sizeof(ROBOT));
+
+	int full_port = 6600 + port + ((side == 0) ? 70 : 60);
 	
-	r->client = playerc_client_create (NULL, "localhost", port);
+	r->client = playerc_client_create (NULL, "localhost", full_port);
 	if (playerc_client_connect(r->client) != 0) {
 		fprintf(stderr, "Error: %s\n", playerc_error_str());
 		free(r);
 		return NULL;
 	}
 	
-	r->port = port;				// Identify the robot
+	r->port = full_port;				// Identify the robot
 	r->type = type;
 	r->state = ACQUIRING_BLOB;
 	r->isClosingGripper = 0;
@@ -32,13 +34,13 @@ ROBOT* create_robot (int port, int type) {
 
 	// Setup initial pos
 	r->initial_x = 0;
-	if ((port % 10) == 5) {
+	if (port == 5) {
 		r->initial_y = -1;
 	}
-	else if ((port % 10) == 6) {
+	else if (port == 6) {
 		r->initial_y = 0;
 	}
-	else if ((port % 10) == 7) {
+	else if (port == 7) {
 		r->initial_y = 1;
 	}
 
