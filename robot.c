@@ -30,6 +30,18 @@ ROBOT* create_robot (int port, int type) {
 	r->vrot = 0;
 	r->acquired_blob = NULL;		// No blob acquired yet
 
+	// Setup initial pos
+	r->initial_x = 0;
+	if ((port % 10) == 5) {
+		r->initial_y = -1;
+	}
+	else if ((port % 10) == 6) {
+		r->initial_y = 0;
+	}
+	else if ((port % 10) == 7) {
+		r->initial_y = 1;
+	}
+
 	setup(r);
 
 	robot_read(r);
@@ -142,10 +154,9 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		// Reached, turn right until goes around, then change hotspot
 		turn_right(r);
 		r->vlong = 0;
-		// TODO: won't work this way, first time diff will be lesser than 0.1f
-		// Greater than?
+		
 		temp += 0.4f;
-		if (temp >= 3) {
+		if (temp >= 18) {
 			in_hotspot = 0;
 			current_hotspot++;
 		}
@@ -198,19 +209,6 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 			set_speed(r, r->vlong / 2);
 		}
 	}
-	else if (r->state == LOOKING_AT_BLOB) {		// Test, ignore
-		// Aims at nearest blob
-		int k, temp_diff = 0;
-		float temp_range = 0;
-		for(k = 0; k < r->bf->blobs_count; k++){
-			if (r->bf->blobs[k].color == 65280){
-				temp_diff = 40 - (int)(r->bf->blobs[k].x);
-				temp_range = r->bf->blobs[k].range;
-			}
-		}
-		if (temp_diff < 0) turn_right(r);
-		else if (temp_diff > 0) turn_left(r);
-	}
 	else if (r->state == GOING_TO_BLOB) {
 		// Find correct position and go for it
 		// Very close, use own camera
@@ -229,7 +227,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		r->vrot /= 2;
 
 		// If is close enough and facing blob
-		if (temp_range < 0.52f /*&& diff(temp_diff, 0) <= 2*/) {
+		if (temp_range < 0.52f) {
 			no_turn(r);
 			set_speed(r, 0);
 			r->state = GRABBING_BLOB;
@@ -247,7 +245,6 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		
 	}
 	else if (r->state == GOING_TO_BASE) {
-		
 		// Go to (0,0)
 		go_to (r, 0.f, 0.f);
 		if (distance(r->position2d->px, r->position2d->py, 0.f, 0.f) < 1) {
@@ -266,12 +263,8 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		}
 	}
 	else if (r->state == ADJUST_IN_BASE) {
-		// Rotate until initial rotation
-		// TODO: Check if 0 is correct
-		if (diff(r->position2d->pa, 0) < 0.2f) {
-			r->state = ACQUIRING_BLOB;
-		}
-		else turn_right(r);
+		// Go to initial position
+		go_to(r, r->initial_x, r->initial_y);
 	}
 }
 
