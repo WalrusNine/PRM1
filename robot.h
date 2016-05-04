@@ -4,7 +4,8 @@
 #include <libplayerc/playerc.h>
 #include "bloblist.h"
 
-#define DEBUG(msg) printf("%s - %d - %s\n", msg, __LINE__, __FILE__);
+// ================================
+// Values for robot without gripper
 
 // Turning points for the camera
 static float hotspots[9][2] =
@@ -18,11 +19,14 @@ static int current_hotspot = 0;
 // To know whether it's in a hotspot or not, if should turn or keep going
 static int in_hotspot = 0;
 
-// TODO: Stop turning
-static float temp = 0;
+// Amount to turn to look for blobs
+static float turn_amount = 0;
 
 // Whether there's a robot going for a blob or not
 static int is_robot_acting = 0;
+
+// Values for robot without gripper
+// ================================
 
 enum state {
 	ACQUIRING_BLOB,		// Is looking at list for an unacquired blob

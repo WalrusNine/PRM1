@@ -151,11 +151,11 @@ void update_without_gripper (ROBOT* r, BLOBLIST* list) {
 		turn_right(r);
 		r->vlong = 0;
 		
-		temp += 0.4f;
-		if (temp >= 18) {
+		turn_amount += 0.4f;
+		if (turn_amount >= 18) {
 			in_hotspot = 0;
 			current_hotspot++;
-			temp = 0;
+			turn_amount = 0;
 		}
 	}
 }
@@ -249,11 +249,7 @@ void update_with_gripper (ROBOT* r, BLOBLIST* list) {
 		}
 	}
 	else if (r->state == DROPPING_BLOB) {
-		// Open gripper if it's not opening already
-		//if (!r->isOpeningGripper) {
-			//DEBUG("Opening");
-			open_gripper(r);
-		//}
+		open_gripper(r);
 		
 		if (is_gripper_opened(r)) {
 			r->isOpeningGripper = 0;
